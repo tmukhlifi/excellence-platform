@@ -14,8 +14,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["DM Sans", "system-ui", "sans-serif"],
-        display: ["Plus Jakarta Sans", "system-ui", "sans-serif"],
+        sans: ["IBM Plex Sans Arabic", "Tajawal", "system-ui", "sans-serif"],
+        display: ["Tajawal", "IBM Plex Sans Arabic", "system-ui", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -42,6 +42,14 @@ export default {
         warning: {
           DEFAULT: "hsl(var(--warning))",
           foreground: "hsl(var(--warning-foreground))",
+        },
+        info: {
+          DEFAULT: "hsl(var(--info))",
+          foreground: "hsl(var(--info-foreground))",
+        },
+        gold: {
+          DEFAULT: "hsl(var(--gold))",
+          foreground: "hsl(var(--gold-foreground))",
         },
         muted: {
           DEFAULT: "hsl(var(--muted))",

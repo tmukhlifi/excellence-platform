@@ -13,6 +13,13 @@ import {
   FileBarChart, ClipboardCheck, FolderCheck, AlertTriangle, Rocket, Network,
   Shield, Building2, FileText, Sparkles, BarChart3, Settings, Upload, Plus, Send,
 } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { toast } from "sonner";
 
 export function FrameworksPage() {
   return (
@@ -45,38 +52,110 @@ export function FrameworksPage() {
 }
 
 export function SelfAssessmentPage() {
+  const [selectedFw, setSelectedFw] = useState("f1");
+  const fwCriteria = useMemo(() => criteria.filter(c => c.frameworkId === selectedFw), [selectedFw]);
+  const [scores, setScores] = useState<Record<string, number>>(() =>
+    Object.fromEntries(criteria.map(c => [c.id, c.currentScore]))
+  );
+
+  const fw = frameworks.find(f => f.id === selectedFw)!;
+  const totalWeight = fwCriteria.reduce((s, c) => s + c.weight, 0) || 1;
+  const weightedScore = Math.round(
+    fwCriteria.reduce((s, c) => s + (scores[c.id] ?? 0) * c.weight, 0) / totalWeight
+  );
+  const enablers = fwCriteria.filter(c => c.type === "ممكن");
+  const results = fwCriteria.filter(c => c.type === "نتيجة");
+  const enablersAvg = enablers.length ? Math.round(enablers.reduce((s, c) => s + (scores[c.id] ?? 0), 0) / enablers.length) : 0;
+  const resultsAvg = results.length ? Math.round(results.reduce((s, c) => s + (scores[c.id] ?? 0), 0) / results.length) : 0;
+
+  const handleSave = () => toast.success("تم حفظ التقييم بنجاح (وضع تجريبي)");
+  const handleSubmit = () => toast.success(`تم إرسال التقييم للاعتماد - الدرجة الإجمالية ${weightedScore}/100`);
+
   return (
     <ExcellenceLayout>
-      <PageHeader title="التقييم الذاتي" subtitle="تقييم منهجي وفق RADAR لـ EFQM، إتقان لـ KAQA، والامتثال لـ ISO" icon={ClipboardCheck} />
+      <PageHeader
+        title="التقييم الذاتي"
+        subtitle="تقييم منهجي وفق RADAR لـ EFQM، إتقان لـ KAQA، والامتثال لـ ISO"
+        icon={ClipboardCheck}
+        actions={
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleSave}>حفظ مسودة</Button>
+            <Button onClick={handleSubmit}>إرسال للاعتماد</Button>
+          </div>
+        }
+      />
       <div className="grid lg:grid-cols-3 gap-3 mb-4">
-        {frameworks.slice(0, 3).map((f) => (
-          <button key={f.id} className="gov-card p-4 text-right hover:border-primary transition-all">
+        {frameworks.slice(0, 6).map((f) => (
+          <button
+            key={f.id}
+            onClick={() => setSelectedFw(f.id)}
+            className={`gov-card p-4 text-right transition-all ${selectedFw === f.id ? "border-primary border-2 bg-primary/5" : "hover:border-primary"}`}
+          >
             <div className="text-xs text-muted-foreground">{f.type}</div>
             <div className="font-bold mt-1">{f.shortName}</div>
             <div className="text-xs text-muted-foreground mt-2">{f.mainCriteria} معيار · {f.subCriteria} فرعي</div>
           </button>
         ))}
       </div>
-      <SectionCard title="معايير EFQM - تقييم تجريبي" icon={ClipboardCheck}>
+
+      <div className="grid md:grid-cols-4 gap-3 mb-4">
+        <div className="gov-card p-4">
+          <div className="text-xs text-muted-foreground">الدرجة الإجمالية المرجّحة</div>
+          <div className="text-3xl font-bold text-primary mt-1">{weightedScore}<span className="text-sm text-muted-foreground">/100</span></div>
+          <ProgressBar value={weightedScore} color={weightedScore >= 75 ? "success" : "warning"} showValue={false} />
+        </div>
+        <div className="gov-card p-4">
+          <div className="text-xs text-muted-foreground">متوسط الممكنات</div>
+          <div className="text-3xl font-bold mt-1">{enablersAvg}</div>
+          <div className="text-[11px] text-muted-foreground">{enablers.length} معيار ممكن</div>
+        </div>
+        <div className="gov-card p-4">
+          <div className="text-xs text-muted-foreground">متوسط النتائج</div>
+          <div className="text-3xl font-bold mt-1">{resultsAvg}</div>
+          <div className="text-[11px] text-muted-foreground">{results.length} معيار نتيجة</div>
+        </div>
+        <div className="gov-card p-4">
+          <div className="text-xs text-muted-foreground">فجوة الممكنات-النتائج</div>
+          <div className={`text-3xl font-bold mt-1 ${Math.abs(enablersAvg - resultsAvg) > 10 ? "text-warning" : "text-success"}`}>
+            {enablersAvg - resultsAvg > 0 ? "+" : ""}{enablersAvg - resultsAvg}
+          </div>
+          <div className="text-[11px] text-muted-foreground">{Math.abs(enablersAvg - resultsAvg) > 10 ? "تحتاج محاذاة" : "متوازنة"}</div>
+        </div>
+      </div>
+
+      <SectionCard title={`معايير ${fw.shortName} - تقييم تفاعلي`} icon={ClipboardCheck} description="حرّك المؤشر لتحديث الدرجة الحالية - تتم إعادة الحساب فوراً">
         <div className="space-y-3">
-          {criteria.filter(c => c.frameworkId === "f1").map((c) => (
-            <div key={c.id} className="p-3 border border-border rounded-lg">
-              <div className="flex items-center justify-between mb-2">
-                <div>
-                  <span className="text-xs px-2 py-0.5 rounded bg-muted">{c.type}</span>
-                  <span className="font-semibold text-sm mr-2">{c.code}. {c.name}</span>
+          {fwCriteria.map((c) => {
+            const val = scores[c.id] ?? c.currentScore;
+            return (
+              <div key={c.id} className="p-3 border border-border rounded-lg hover:border-primary/40 transition">
+                <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs px-2 py-0.5 rounded bg-muted font-semibold">{c.type}</span>
+                    <span className="font-semibold text-sm">{c.code}. {c.name}</span>
+                    <span className="text-[10px] text-muted-foreground">وزن {c.weight}</span>
+                  </div>
+                  <span className="text-xs text-muted-foreground">{getDept(c.ownerDeptId)?.name}</span>
                 </div>
-                <span className="text-xs text-muted-foreground">{getDept(c.ownerDeptId)?.name}</span>
+                <div className="grid md:grid-cols-[1fr_auto_auto] gap-3 items-center">
+                  <input
+                    type="range" min={0} max={100} value={val}
+                    onChange={(e) => setScores(s => ({ ...s, [c.id]: Number(e.target.value) }))}
+                    className="w-full accent-primary"
+                  />
+                  <div className="text-center min-w-[80px]">
+                    <div className={`text-2xl font-bold ${val >= 75 ? "text-success" : val >= 50 ? "text-warning" : "text-destructive"}`}>{val}</div>
+                    <div className="text-[10px] text-muted-foreground">من {c.targetScore}</div>
+                  </div>
+                  <div className="text-[11px] text-muted-foreground min-w-[90px] text-center">
+                    فجوة <b className="text-foreground">{Math.max(0, c.targetScore - val)}</b><br/>
+                    {c.gaps} فجوة موثقة
+                  </div>
+                </div>
+                {c.notes && <p className="text-[11px] text-muted-foreground mt-2 italic">ملاحظة: {c.notes}</p>}
               </div>
-              <div className="grid md:grid-cols-3 gap-3 text-xs">
-                <div><label className="text-muted-foreground">الدرجة الحالية</label><Input type="number" defaultValue={c.currentScore} className="h-8 mt-1" /></div>
-                <div><label className="text-muted-foreground">الدرجة المستهدفة</label><Input type="number" defaultValue={c.targetScore} className="h-8 mt-1" /></div>
-                <div><label className="text-muted-foreground">مستوى الثقة</label>
-                  <select className="w-full h-8 mt-1 border border-input rounded-md px-2 text-xs bg-background"><option>عالية</option><option>متوسطة</option><option>منخفضة</option></select></div>
-              </div>
-              <ProgressBar value={c.currentScore} color={c.currentScore >= 75 ? "success" : "warning"} label="الفجوة عن المستهدف" showValue={false} />
-            </div>
-          ))}
+            );
+          })}
         </div>
       </SectionCard>
     </ExcellenceLayout>
@@ -117,6 +196,12 @@ export function EvidencesPage() {
 }
 
 export function GapsPage() {
+  const [priority, setPriority] = useState<string>("الكل");
+  const [dept, setDept] = useState<string>("الكل");
+  const filteredGaps = gaps.filter(g =>
+    (priority === "الكل" || g.priority === priority) &&
+    (dept === "الكل" || g.ownerDeptId === dept)
+  );
   return (
     <ExcellenceLayout>
       <PageHeader title="الفجوات وفرص التحسين" subtitle="تحليل الفجوات بمصفوفة الأثر والجهد وتحويلها إلى مشاريع" icon={AlertTriangle} />
@@ -128,13 +213,36 @@ export function GapsPage() {
           <div className="bg-muted border border-border rounded-lg p-3 flex flex-col"><div className="text-xs font-bold text-muted-foreground mb-2">يؤجل (أثر منخفض، جهد عالٍ)</div><div className="flex-1 overflow-auto space-y-1">{improvements.filter(i => i.category === "يؤجل").map(i => <div key={i.id} className="text-[11px] p-1.5 bg-card rounded">{i.title}</div>)}</div></div>
         </div>
       </SectionCard>
-      <SectionCard title="جميع الفجوات" icon={AlertTriangle}>
+      <SectionCard
+        title={`الفجوات (${filteredGaps.length} من ${gaps.length})`}
+        icon={AlertTriangle}
+        action={
+          <div className="flex flex-wrap gap-2">
+            <select value={priority} onChange={e => setPriority(e.target.value)} className="h-8 text-xs border border-input rounded-md px-2 bg-background">
+              {["الكل","حرجة","عالية","متوسطة","منخفضة"].map(p => <option key={p}>{p}</option>)}
+            </select>
+            <select value={dept} onChange={e => setDept(e.target.value)} className="h-8 text-xs border border-input rounded-md px-2 bg-background">
+              <option value="الكل">كل الإدارات</option>
+              {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+            </select>
+          </div>
+        }
+      >
         <div className="space-y-2">
-          {gaps.map(g => (
+          {filteredGaps.length === 0 && <div className="text-center text-sm text-muted-foreground py-8">لا توجد فجوات تطابق الفلترة</div>}
+          {filteredGaps.map(g => (
             <div key={g.id} className="p-3 border border-border rounded-lg hover:border-primary/30">
               <div className="flex items-center justify-between mb-1 gap-2 flex-wrap">
                 <h4 className="font-semibold text-sm">{g.title}</h4>
-                <div className="flex gap-1"><StatusBadge status={g.priority} /><StatusBadge status={g.status} /></div>
+                <div className="flex gap-1 items-center">
+                  <StatusBadge status={g.priority} />
+                  <StatusBadge status={g.status} />
+                  {g.convertibleToProject && g.status !== "تم تحويلها" && (
+                    <Button size="sm" variant="outline" className="h-6 text-[11px] gap-1" onClick={() => toast.success(`تم تحويل "${g.title}" إلى مشروع تحسين`)}>
+                      <Rocket className="w-3 h-3" /> حوّل لمشروع
+                    </Button>
+                  )}
+                </div>
               </div>
               <p className="text-xs text-muted-foreground mb-2">{g.description}</p>
               <div className="text-[11px] text-muted-foreground">السبب الجذري: {g.rootCause} · أثر {g.impact}/5 · جهد {g.effort}/5 · {getDept(g.ownerDeptId)?.name}</div>
@@ -301,48 +409,137 @@ export function ReportsPage() {
   );
 }
 
+type AgentMsg = { role: "user" | "assistant"; text: string; agent?: string };
+
 const agents = [
-  { id: "a1", name: "وكيل EFQM و KAQA", q: ["ما أعلى فجواتنا في معيار القيادة؟", "اقترح خطة تحسين لمعيار خلق القيمة المستدامة"] },
-  { id: "a2", name: "وكيل ISO و IMS", q: ["ما البنود المشتركة بين ISO 9001 و ISO 14001؟", "ما حالات عدم المطابقة الجسيمة المفتوحة؟"] },
-  { id: "a3", name: "وكيل تحليل الشواهد", q: ["ما الشواهد التي يمكن استخدامها لأكثر من معيار؟", "ما الشواهد الناقصة الأعلى أولوية؟"] },
-  { id: "a4", name: "وكيل فرص التحسين", q: ["ما أعلى 5 فرص أثراً؟", "ما المكاسب السريعة المتاحة؟"] },
-  { id: "a5", name: "وكيل مشاريع التحسين", q: ["ما المشاريع المتأخرة؟", "ما أعلى مشروع أثراً على الجاهزية؟"] },
-  { id: "a6", name: "وكيل المقارنة المعيارية", q: ["قارن نضج إدارتنا بالمستوى المرجعي", "ما الإدارات الأكثر تأخراً؟"] },
-  { id: "a7", name: "وكيل التقارير التنفيذية", q: ["لخّص جاهزيتنا للقيادة", "ما القرارات المطلوبة من القيادة؟"] },
-  { id: "a8", name: "وكيل المخاطر والانحرافات", q: ["ما أعلى المخاطر؟", "أين الانحرافات الحرجة؟"] },
+  { id: "a1", name: "وكيل EFQM و KAQA", icon: "🏆",
+    q: ["ما أعلى فجواتنا في معيار القيادة؟", "اقترح خطة تحسين لمعيار خلق القيمة المستدامة"],
+    answer: () => {
+      const efqmGaps = gaps.filter(g => g.frameworkId === "f1").sort((a,b) => b.impact - a.impact).slice(0,3);
+      return `أعلى الفجوات في EFQM:\n\n${efqmGaps.map((g,i) => `${i+1}. ${g.title} — أثر ${g.impact}/5\n   التوصية: ${g.recommendation}`).join("\n\n")}\n\nمتوسط الجاهزية الحالي: ${frameworks[0].readinessScore}/100. أنصح بالتركيز على المعايير الممكنة قبل النتائج لتحقيق قفزة في الدورة القادمة.`;
+    }},
+  { id: "a2", name: "وكيل ISO و IMS", icon: "🛡️",
+    q: ["ما البنود المشتركة بين معايير ISO؟", "ما حالات عدم المطابقة الجسيمة المفتوحة؟"],
+    answer: () => {
+      const major = nonconformities.filter(n => n.classification === "جسيمة" && n.status !== "مغلقة");
+      return `حالات عدم المطابقة الجسيمة المفتوحة (${major.length}):\n\n${major.map(n => `• ${n.number} — ${getFramework(n.frameworkId)?.shortName} بند ${n.clause}\n  ${n.description}\n  المالك: ${getDept(n.ownerDeptId)?.name} | الاستحقاق: ${n.dueDate}`).join("\n\n")}\n\nيُنصح بعقد لجنة تصحيحية عاجلة خلال 7 أيام.`;
+    }},
+  { id: "a3", name: "وكيل تحليل الشواهد", icon: "📁",
+    q: ["ما الشواهد التي تخدم عدة نماذج؟", "ما الشواهد الناقصة الأعلى أولوية؟"],
+    answer: () => {
+      const multi = evidences.filter(e => e.frameworkIds.length >= 3).slice(0,5);
+      const weak = evidences.filter(e => e.status === "ناقص" || e.strength === "ضعيف");
+      return `شواهد متعددة الاستخدام (تخدم 3+ نماذج):\n${multi.map(e => `• ${e.name} → ${e.frameworkIds.length} نماذج`).join("\n")}\n\nشواهد تحتاج معالجة عاجلة (${weak.length}):\n${weak.map(e => `• ${e.name} (${e.status}/${e.strength})`).join("\n")}`;
+    }},
+  { id: "a4", name: "وكيل فرص التحسين", icon: "💡",
+    q: ["ما أعلى 5 فرص أثراً؟", "ما المكاسب السريعة المتاحة؟"],
+    answer: () => {
+      const quick = improvements.filter(i => i.category === "مكاسب سريعة").slice(0,5);
+      return `المكاسب السريعة الموصى بتنفيذها فوراً:\n\n${quick.map((i,idx) => `${idx+1}. ${i.title}\n   الأثر المتوقع: ${i.expectedImpactDescription}\n   المالك: ${getDept(i.ownerDeptId)?.name}`).join("\n\n")}\n\nهذه الفرص يمكن تنفيذها خلال 60 يوماً وتحقيق أثر فوري.`;
+    }},
+  { id: "a5", name: "وكيل مشاريع التحسين", icon: "🚀",
+    q: ["ما المشاريع المتأخرة؟", "ما أعلى مشروع أثراً؟"],
+    answer: () => {
+      const late = projects.filter(p => p.status === "متأخر");
+      const inProg = projects.filter(p => p.status === "قيد التنفيذ");
+      return `حالة المشاريع:\n• ${inProg.length} مشروع قيد التنفيذ (متوسط ${Math.round(inProg.reduce((s,p)=>s+p.progress,0)/inProg.length)}%)\n• ${late.length} مشروع متأخر\n\nالمشاريع المتأخرة:\n${late.map(p => `🔴 ${p.name} — ${p.progress}% (${p.ownerName})\n   القرار المطلوب: ${p.decisionsNeeded.join(", ") || "متابعة"}`).join("\n\n")}`;
+    }},
+  { id: "a6", name: "وكيل المقارنة المعيارية", icon: "📊",
+    q: ["ما الإدارات الأعلى نضجاً؟", "ما الإدارات الأكثر تأخراً؟"],
+    answer: () => {
+      const sorted = [...departments].sort((a,b) => b.maturity - a.maturity);
+      return `ترتيب الإدارات حسب النضج:\n\n🥇 الأعلى:\n${sorted.slice(0,3).map((d,i) => `${i+1}. ${d.name} — ${d.maturity}%`).join("\n")}\n\n🔻 الأدنى (تحتاج دعماً):\n${sorted.slice(-3).reverse().map((d,i) => `${i+1}. ${d.name} — ${d.maturity}% (${d.openGaps} فجوة مفتوحة)`).join("\n")}\n\nأنصح بإطلاق برنامج توأمة بين الإدارات الأعلى والأدنى نضجاً.`;
+    }},
+  { id: "a7", name: "وكيل التقارير التنفيذية", icon: "📑",
+    q: ["لخّص جاهزيتنا للقيادة", "ما القرارات المطلوبة من القيادة؟"],
+    answer: () => {
+      const decisions = projects.flatMap(p => p.decisionsNeeded);
+      return `ملخص تنفيذي للقيادة:\n\n📈 المؤشرات الرئيسية:\n• النضج المؤسسي: 74%\n• جاهزية EFQM: 74%\n• جاهزية KAQA: 68%\n• امتثال ISO: 79%\n\n⚠️ القرارات المطلوبة من القيادة:\n${decisions.slice(0,5).map((d,i) => `${i+1}. ${d}`).join("\n")}\n\n💼 التوصية الاستراتيجية: تخصيص لجنة قيادية أسبوعية لمتابعة المسار الحرج.`;
+    }},
+  { id: "a8", name: "وكيل المخاطر والانحرافات", icon: "⚠️",
+    q: ["ما أعلى المخاطر الحرجة؟", "أين الانحرافات؟"],
+    answer: () => {
+      const critical = gaps.filter(g => g.priority === "حرجة");
+      return `المخاطر الحرجة المرصودة (${critical.length}):\n\n${critical.map(g => `🔴 ${g.title}\n   الإدارة: ${getDept(g.ownerDeptId)?.name}\n   الخطر إن أُهمل: ${g.riskIfIgnored}\n   التوصية العاجلة: ${g.recommendation}`).join("\n\n")}`;
+    }},
 ];
 
 export function AdvisorPage() {
+  const [activeAgent, setActiveAgent] = useState(agents[0]);
+  const [messages, setMessages] = useState<AgentMsg[]>([
+    { role: "assistant", text: "أهلاً بك في المستشار الذكي للتميز. اختر وكيلاً متخصصاً من القائمة، ثم اطرح سؤالك أو اختر من الأسئلة المقترحة." }
+  ]);
+  const [input, setInput] = useState("");
+
+  const ask = (question: string) => {
+    if (!question.trim()) return;
+    const agent = activeAgent;
+    setMessages(m => [...m, { role: "user", text: question }]);
+    setInput("");
+    setTimeout(() => {
+      setMessages(m => [...m, { role: "assistant", text: agent.answer(), agent: agent.name }]);
+    }, 500);
+  };
+
   return (
     <ExcellenceLayout>
       <PageHeader title="المستشار الذكي للتميز" subtitle="وكلاء متخصصون لتحليل بياناتك وإعطاء توصيات تنفيذية" icon={Sparkles} />
       <div className="grid lg:grid-cols-3 gap-4">
         <div className="lg:col-span-1 space-y-2">
+          <div className="text-xs font-bold text-muted-foreground mb-2">الوكلاء المتخصصون ({agents.length})</div>
           {agents.map(a => (
-            <button key={a.id} className="w-full text-right gov-card p-3 hover:border-primary transition-all">
-              <div className="flex items-center gap-2"><Sparkles className="w-4 h-4 text-gold" /><span className="font-semibold text-sm">{a.name}</span></div>
+            <button
+              key={a.id}
+              onClick={() => setActiveAgent(a)}
+              className={`w-full text-right gov-card p-3 transition-all ${activeAgent.id === a.id ? "border-primary border-2 bg-primary/5" : "hover:border-primary"}`}
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-lg">{a.icon}</span>
+                <span className="font-semibold text-sm flex-1">{a.name}</span>
+                {activeAgent.id === a.id && <Sparkles className="w-3 h-3 text-gold" />}
+              </div>
             </button>
           ))}
         </div>
-        <div className="lg:col-span-2 gov-card p-4 flex flex-col min-h-[500px]">
-          <div className="flex-1 space-y-3">
-            <div className="bg-muted/40 rounded-lg p-3 text-sm">
-              <b>المستشار الذكي:</b> أهلاً بك. اختر وكيلاً متخصصاً، أو اختر سؤالاً جاهزاً لبدء التحليل.
-            </div>
-            <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 text-sm">
-              <b className="text-primary">أمثلة على الأسئلة:</b>
-              <ul className="mt-2 space-y-1 text-xs list-disc pr-5">
-                {agents[0].q.concat(agents[1].q, agents[3].q).map((q, i) => <li key={i}>{q}</li>)}
-              </ul>
-            </div>
-            <div className="bg-card border border-border rounded-lg p-3 text-sm">
-              <b className="text-foreground">إجابة تجريبية:</b>
-              <p className="text-xs text-muted-foreground mt-1">بناءً على آخر تقييم، أعلى الفجوات في معيار القيادة هي: ضعف في برامج التطوير القيادي، وغياب مؤشرات قياس ثقافة التميز. التوصية المقترحة: إطلاق أكاديمية القيادات (مشروع نشط)، وتطوير إطار قياس ثقافي ربع سنوي.</p>
+        <div className="lg:col-span-2 gov-card flex flex-col min-h-[600px]">
+          <div className="border-b border-border p-3 flex items-center gap-2">
+            <span className="text-xl">{activeAgent.icon}</span>
+            <div>
+              <div className="font-bold text-sm">{activeAgent.name}</div>
+              <div className="text-[11px] text-muted-foreground">متصل · مدعوم بتحليل بيانات المنصة</div>
             </div>
           </div>
-          <div className="flex gap-2 mt-4">
-            <Input placeholder="اكتب سؤالك للمستشار الذكي..." className="flex-1" />
-            <Button className="gap-2"><Send className="w-4 h-4" /> إرسال</Button>
+          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            {messages.map((m, i) => (
+              <div key={i} className={`flex gap-2 ${m.role === "user" ? "flex-row-reverse" : ""}`}>
+                <Avatar className="w-8 h-8 shrink-0">
+                  <AvatarFallback className={m.role === "user" ? "bg-primary text-primary-foreground text-xs" : "bg-gold/20 text-gold text-sm"}>
+                    {m.role === "user" ? "أ" : "🤖"}
+                  </AvatarFallback>
+                </Avatar>
+                <div className={`rounded-lg p-3 max-w-[85%] text-sm whitespace-pre-line ${m.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted/50 border border-border"}`}>
+                  {m.agent && <div className="text-[10px] font-bold text-gold mb-1">{m.agent}</div>}
+                  {m.text}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="border-t border-border p-3 space-y-2">
+            <div className="flex flex-wrap gap-1">
+              {activeAgent.q.map((q, i) => (
+                <button key={i} onClick={() => ask(q)} className="text-[11px] px-2 py-1 rounded-full bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20">
+                  {q}
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <Input
+                value={input} onChange={e => setInput(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && ask(input)}
+                placeholder={`اسأل ${activeAgent.name}...`} className="flex-1"
+              />
+              <Button className="gap-2" onClick={() => ask(input)}><Send className="w-4 h-4" /> إرسال</Button>
+            </div>
           </div>
         </div>
       </div>
@@ -373,15 +570,122 @@ export function BenchmarkPage() {
 export function ExcellenceSettingsPage() {
   return (
     <ExcellenceLayout>
-      <PageHeader title="الإعدادات" subtitle="إدارة المستخدمين، الأدوار، النماذج، والإعدادات العامة" icon={Settings} />
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
-        {["إدارة المستخدمين","إدارة الأدوار","إدارة النماذج","إدارة الإدارات","إدارة الحالات","إدارة الأوزان","إدارة الأولويات","قوالب التقارير","إعدادات اللغة","إعدادات التنبيهات"].map(s => (
-          <div key={s} className="gov-card p-4 hover:border-primary cursor-pointer">
-            <div className="flex items-center gap-2"><Settings className="w-4 h-4 text-primary" /><span className="font-semibold text-sm">{s}</span></div>
-            <p className="text-xs text-muted-foreground mt-1">إعدادات تجريبية</p>
-          </div>
-        ))}
-      </div>
+      <PageHeader title="الإعدادات" subtitle="إدارة المستخدمين، الأدوار، النماذج، والتفضيلات العامة" icon={Settings} />
+      <Tabs defaultValue="users" dir="rtl" className="w-full">
+        <TabsList className="grid grid-cols-2 md:grid-cols-5 w-full h-auto">
+          <TabsTrigger value="users">المستخدمون والأدوار</TabsTrigger>
+          <TabsTrigger value="frameworks">النماذج والأوزان</TabsTrigger>
+          <TabsTrigger value="orgs">الإدارات</TabsTrigger>
+          <TabsTrigger value="notifications">التنبيهات</TabsTrigger>
+          <TabsTrigger value="general">عامة</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="users" className="mt-4">
+          <SectionCard title="المستخدمون والأدوار" icon={Settings} action={<Button size="sm" className="gap-1"><Plus className="w-3 h-3" /> مستخدم جديد</Button>}>
+            <table className="w-full text-xs">
+              <thead><tr className="bg-muted/50">{["الاسم","البريد","الدور","الإدارة","الحالة"].map(h => <th key={h} className="text-right p-2 font-semibold text-muted-foreground">{h}</th>)}</tr></thead>
+              <tbody>
+                {[
+                  { n: "د. عبدالرحمن السهلي", e: "a.alsahli@gov.sa", r: "مدير النظام", d: "إدارة الجودة والتميز", s: "نشط" },
+                  { n: "أ. سلطان العتيبي", e: "s.alotaibi@gov.sa", r: "مدير إدارة الجودة والتميز", d: "إدارة الجودة والتميز", s: "نشط" },
+                  { n: "د. ناصر الغامدي", e: "n.alghamdi@gov.sa", r: "مالك معيار", d: "التخطيط الاستراتيجي", s: "نشط" },
+                  { n: "م. ياسر العنزي", e: "y.alanzi@gov.sa", r: "مدقق ISO", d: "الأمن السيبراني", s: "نشط" },
+                  { n: "أ. منى الزهراني", e: "m.alzahrani@gov.sa", r: "مالك مشروع تحسين", d: "الموارد البشرية", s: "نشط" },
+                  { n: "أ. ريم الشهري", e: "r.alshehri@gov.sa", r: "مقيم داخلي", d: "التواصل المؤسسي", s: "معلق" },
+                ].map((u,i) => (
+                  <tr key={i} className="border-t border-border">
+                    <td className="p-2 font-medium">{u.n}</td>
+                    <td className="p-2 text-muted-foreground">{u.e}</td>
+                    <td className="p-2"><span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary">{u.r}</span></td>
+                    <td className="p-2 text-muted-foreground">{u.d}</td>
+                    <td className="p-2"><StatusBadge status={u.s === "نشط" ? "مكتمل" : "قيد المعالجة"} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </SectionCard>
+        </TabsContent>
+
+        <TabsContent value="frameworks" className="mt-4">
+          <SectionCard title="أوزان معايير النماذج" icon={FileBarChart} description="ضبط أوزان المعايير لكل نموذج تقييم">
+            <div className="space-y-3">
+              {frameworks.map(f => (
+                <div key={f.id} className="p-3 border border-border rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <span className="font-bold text-sm">{f.shortName}</span>
+                      <span className="text-[11px] text-muted-foreground mr-2">إجمالي الوزن: {f.totalWeight}</span>
+                    </div>
+                    <Switch defaultChecked />
+                  </div>
+                  <div className="grid md:grid-cols-3 gap-2 text-[11px]">
+                    <div><Label className="text-muted-foreground">حد أدنى للاجتياز</Label><Input type="number" defaultValue={60} className="h-7 mt-1" /></div>
+                    <div><Label className="text-muted-foreground">حد التميز</Label><Input type="number" defaultValue={75} className="h-7 mt-1" /></div>
+                    <div><Label className="text-muted-foreground">دورة التقييم (شهر)</Label><Input type="number" defaultValue={6} className="h-7 mt-1" /></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </SectionCard>
+        </TabsContent>
+
+        <TabsContent value="orgs" className="mt-4">
+          <SectionCard title="الإدارات والملاك" icon={Building2}>
+            <table className="w-full text-xs">
+              <thead><tr className="bg-muted/50">{["الكود","الإدارة","المدير","المعايير المملوكة"].map(h => <th key={h} className="text-right p-2 font-semibold text-muted-foreground">{h}</th>)}</tr></thead>
+              <tbody>
+                {departments.map(d => (
+                  <tr key={d.id} className="border-t border-border">
+                    <td className="p-2 font-bold">{d.code}</td>
+                    <td className="p-2">{d.name}</td>
+                    <td className="p-2 text-muted-foreground">{d.head}</td>
+                    <td className="p-2 text-center">{d.ownedStandards}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </SectionCard>
+        </TabsContent>
+
+        <TabsContent value="notifications" className="mt-4">
+          <SectionCard title="إعدادات التنبيهات" icon={Settings}>
+            <div className="space-y-3">
+              {[
+                { t: "تنبيه عند فجوة جديدة حرجة", d: "إرسال بريد لمالك المعيار والإدارة" },
+                { t: "تنبيه عند تأخر مشروع تحسين", d: "إشعار يومي للمدير عند تجاوز الموعد" },
+                { t: "تنبيه قرب موعد تدقيق ISO", d: "تذكير قبل 30 و 14 و 7 أيام" },
+                { t: "تنبيه عدم مطابقة جسيمة", d: "إشعار فوري للقيادة التنفيذية" },
+                { t: "تقرير أسبوعي للقيادة", d: "ملخص تلقائي كل يوم أحد" },
+                { t: "تنبيه شواهد منتهية الصلاحية", d: "قبل 60 و 30 يوماً من انتهاء الصلاحية" },
+              ].map((n,i) => (
+                <div key={i} className="flex items-center justify-between p-3 border border-border rounded-lg">
+                  <div><div className="font-semibold text-sm">{n.t}</div><div className="text-[11px] text-muted-foreground">{n.d}</div></div>
+                  <Switch defaultChecked={i < 4} />
+                </div>
+              ))}
+            </div>
+          </SectionCard>
+        </TabsContent>
+
+        <TabsContent value="general" className="mt-4">
+          <SectionCard title="إعدادات عامة" icon={Settings}>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div><Label>اسم الجهة</Label><Input defaultValue="الجهة الحكومية" className="mt-1" /></div>
+              <div><Label>السنة المالية</Label><Input defaultValue="2026" className="mt-1" /></div>
+              <div><Label>اللغة الافتراضية</Label>
+                <select className="w-full h-10 mt-1 border border-input rounded-md px-3 text-sm bg-background"><option>العربية</option><option>English</option></select>
+              </div>
+              <div><Label>المنطقة الزمنية</Label>
+                <select className="w-full h-10 mt-1 border border-input rounded-md px-3 text-sm bg-background"><option>توقيت الرياض (GMT+3)</option></select>
+              </div>
+              <div className="md:col-span-2"><Label>سياسة الجودة المعتمدة</Label>
+                <Textarea rows={4} defaultValue="نلتزم بترسيخ ثقافة التميز المؤسسي وتحقيق أعلى معايير الجودة في جميع خدماتنا، بما يعزز الثقة ويحقق رضا المتعاملين." className="mt-1" />
+              </div>
+              <div className="md:col-span-2 flex justify-end"><Button onClick={() => toast.success("تم حفظ الإعدادات")}>حفظ التغييرات</Button></div>
+            </div>
+          </SectionCard>
+        </TabsContent>
+      </Tabs>
     </ExcellenceLayout>
   );
 }

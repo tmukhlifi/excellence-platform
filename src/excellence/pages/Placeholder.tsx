@@ -216,7 +216,7 @@ export function GapsPage() {
       <SectionCard
         title={`الفجوات (${filteredGaps.length} من ${gaps.length})`}
         icon={AlertTriangle}
-        actions={
+        action={
           <div className="flex flex-wrap gap-2">
             <select value={priority} onChange={e => setPriority(e.target.value)} className="h-8 text-xs border border-input rounded-md px-2 bg-background">
               {["الكل","حرجة","عالية","متوسطة","منخفضة"].map(p => <option key={p}>{p}</option>)}

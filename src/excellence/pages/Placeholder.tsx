@@ -13,6 +13,13 @@ import {
   FileBarChart, ClipboardCheck, FolderCheck, AlertTriangle, Rocket, Network,
   Shield, Building2, FileText, Sparkles, BarChart3, Settings, Upload, Plus, Send,
 } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { toast } from "sonner";
 
 export function FrameworksPage() {
   return (

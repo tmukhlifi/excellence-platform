@@ -196,6 +196,12 @@ export function EvidencesPage() {
 }
 
 export function GapsPage() {
+  const [priority, setPriority] = useState<string>("الكل");
+  const [dept, setDept] = useState<string>("الكل");
+  const filteredGaps = gaps.filter(g =>
+    (priority === "الكل" || g.priority === priority) &&
+    (dept === "الكل" || g.ownerDeptId === dept)
+  );
   return (
     <ExcellenceLayout>
       <PageHeader title="الفجوات وفرص التحسين" subtitle="تحليل الفجوات بمصفوفة الأثر والجهد وتحويلها إلى مشاريع" icon={AlertTriangle} />
@@ -207,13 +213,36 @@ export function GapsPage() {
           <div className="bg-muted border border-border rounded-lg p-3 flex flex-col"><div className="text-xs font-bold text-muted-foreground mb-2">يؤجل (أثر منخفض، جهد عالٍ)</div><div className="flex-1 overflow-auto space-y-1">{improvements.filter(i => i.category === "يؤجل").map(i => <div key={i.id} className="text-[11px] p-1.5 bg-card rounded">{i.title}</div>)}</div></div>
         </div>
       </SectionCard>
-      <SectionCard title="جميع الفجوات" icon={AlertTriangle}>
+      <SectionCard
+        title={`الفجوات (${filteredGaps.length} من ${gaps.length})`}
+        icon={AlertTriangle}
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <select value={priority} onChange={e => setPriority(e.target.value)} className="h-8 text-xs border border-input rounded-md px-2 bg-background">
+              {["الكل","حرجة","عالية","متوسطة","منخفضة"].map(p => <option key={p}>{p}</option>)}
+            </select>
+            <select value={dept} onChange={e => setDept(e.target.value)} className="h-8 text-xs border border-input rounded-md px-2 bg-background">
+              <option value="الكل">كل الإدارات</option>
+              {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+            </select>
+          </div>
+        }
+      >
         <div className="space-y-2">
-          {gaps.map(g => (
+          {filteredGaps.length === 0 && <div className="text-center text-sm text-muted-foreground py-8">لا توجد فجوات تطابق الفلترة</div>}
+          {filteredGaps.map(g => (
             <div key={g.id} className="p-3 border border-border rounded-lg hover:border-primary/30">
               <div className="flex items-center justify-between mb-1 gap-2 flex-wrap">
                 <h4 className="font-semibold text-sm">{g.title}</h4>
-                <div className="flex gap-1"><StatusBadge status={g.priority} /><StatusBadge status={g.status} /></div>
+                <div className="flex gap-1 items-center">
+                  <StatusBadge status={g.priority} />
+                  <StatusBadge status={g.status} />
+                  {g.convertibleToProject && g.status !== "تم تحويلها" && (
+                    <Button size="sm" variant="outline" className="h-6 text-[11px] gap-1" onClick={() => toast.success(`تم تحويل "${g.title}" إلى مشروع تحسين`)}>
+                      <Rocket className="w-3 h-3" /> حوّل لمشروع
+                    </Button>
+                  )}
+                </div>
               </div>
               <p className="text-xs text-muted-foreground mb-2">{g.description}</p>
               <div className="text-[11px] text-muted-foreground">السبب الجذري: {g.rootCause} · أثر {g.impact}/5 · جهد {g.effort}/5 · {getDept(g.ownerDeptId)?.name}</div>

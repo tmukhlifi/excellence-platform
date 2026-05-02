@@ -52,38 +52,110 @@ export function FrameworksPage() {
 }
 
 export function SelfAssessmentPage() {
+  const [selectedFw, setSelectedFw] = useState("f1");
+  const fwCriteria = useMemo(() => criteria.filter(c => c.frameworkId === selectedFw), [selectedFw]);
+  const [scores, setScores] = useState<Record<string, number>>(() =>
+    Object.fromEntries(criteria.map(c => [c.id, c.currentScore]))
+  );
+
+  const fw = frameworks.find(f => f.id === selectedFw)!;
+  const totalWeight = fwCriteria.reduce((s, c) => s + c.weight, 0) || 1;
+  const weightedScore = Math.round(
+    fwCriteria.reduce((s, c) => s + (scores[c.id] ?? 0) * c.weight, 0) / totalWeight
+  );
+  const enablers = fwCriteria.filter(c => c.type === "ممكن");
+  const results = fwCriteria.filter(c => c.type === "نتيجة");
+  const enablersAvg = enablers.length ? Math.round(enablers.reduce((s, c) => s + (scores[c.id] ?? 0), 0) / enablers.length) : 0;
+  const resultsAvg = results.length ? Math.round(results.reduce((s, c) => s + (scores[c.id] ?? 0), 0) / results.length) : 0;
+
+  const handleSave = () => toast.success("تم حفظ التقييم بنجاح (وضع تجريبي)");
+  const handleSubmit = () => toast.success(`تم إرسال التقييم للاعتماد - الدرجة الإجمالية ${weightedScore}/100`);
+
   return (
     <ExcellenceLayout>
-      <PageHeader title="التقييم الذاتي" subtitle="تقييم منهجي وفق RADAR لـ EFQM، إتقان لـ KAQA، والامتثال لـ ISO" icon={ClipboardCheck} />
+      <PageHeader
+        title="التقييم الذاتي"
+        subtitle="تقييم منهجي وفق RADAR لـ EFQM، إتقان لـ KAQA، والامتثال لـ ISO"
+        icon={ClipboardCheck}
+        actions={
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleSave}>حفظ مسودة</Button>
+            <Button onClick={handleSubmit}>إرسال للاعتماد</Button>
+          </div>
+        }
+      />
       <div className="grid lg:grid-cols-3 gap-3 mb-4">
-        {frameworks.slice(0, 3).map((f) => (
-          <button key={f.id} className="gov-card p-4 text-right hover:border-primary transition-all">
+        {frameworks.slice(0, 6).map((f) => (
+          <button
+            key={f.id}
+            onClick={() => setSelectedFw(f.id)}
+            className={`gov-card p-4 text-right transition-all ${selectedFw === f.id ? "border-primary border-2 bg-primary/5" : "hover:border-primary"}`}
+          >
             <div className="text-xs text-muted-foreground">{f.type}</div>
             <div className="font-bold mt-1">{f.shortName}</div>
             <div className="text-xs text-muted-foreground mt-2">{f.mainCriteria} معيار · {f.subCriteria} فرعي</div>
           </button>
         ))}
       </div>
-      <SectionCard title="معايير EFQM - تقييم تجريبي" icon={ClipboardCheck}>
+
+      <div className="grid md:grid-cols-4 gap-3 mb-4">
+        <div className="gov-card p-4">
+          <div className="text-xs text-muted-foreground">الدرجة الإجمالية المرجّحة</div>
+          <div className="text-3xl font-bold text-primary mt-1">{weightedScore}<span className="text-sm text-muted-foreground">/100</span></div>
+          <ProgressBar value={weightedScore} color={weightedScore >= 75 ? "success" : "warning"} showValue={false} />
+        </div>
+        <div className="gov-card p-4">
+          <div className="text-xs text-muted-foreground">متوسط الممكنات</div>
+          <div className="text-3xl font-bold mt-1">{enablersAvg}</div>
+          <div className="text-[11px] text-muted-foreground">{enablers.length} معيار ممكن</div>
+        </div>
+        <div className="gov-card p-4">
+          <div className="text-xs text-muted-foreground">متوسط النتائج</div>
+          <div className="text-3xl font-bold mt-1">{resultsAvg}</div>
+          <div className="text-[11px] text-muted-foreground">{results.length} معيار نتيجة</div>
+        </div>
+        <div className="gov-card p-4">
+          <div className="text-xs text-muted-foreground">فجوة الممكنات-النتائج</div>
+          <div className={`text-3xl font-bold mt-1 ${Math.abs(enablersAvg - resultsAvg) > 10 ? "text-warning" : "text-success"}`}>
+            {enablersAvg - resultsAvg > 0 ? "+" : ""}{enablersAvg - resultsAvg}
+          </div>
+          <div className="text-[11px] text-muted-foreground">{Math.abs(enablersAvg - resultsAvg) > 10 ? "تحتاج محاذاة" : "متوازنة"}</div>
+        </div>
+      </div>
+
+      <SectionCard title={`معايير ${fw.shortName} - تقييم تفاعلي`} icon={ClipboardCheck} description="حرّك المؤشر لتحديث الدرجة الحالية - تتم إعادة الحساب فوراً">
         <div className="space-y-3">
-          {criteria.filter(c => c.frameworkId === "f1").map((c) => (
-            <div key={c.id} className="p-3 border border-border rounded-lg">
-              <div className="flex items-center justify-between mb-2">
-                <div>
-                  <span className="text-xs px-2 py-0.5 rounded bg-muted">{c.type}</span>
-                  <span className="font-semibold text-sm mr-2">{c.code}. {c.name}</span>
+          {fwCriteria.map((c) => {
+            const val = scores[c.id] ?? c.currentScore;
+            return (
+              <div key={c.id} className="p-3 border border-border rounded-lg hover:border-primary/40 transition">
+                <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs px-2 py-0.5 rounded bg-muted font-semibold">{c.type}</span>
+                    <span className="font-semibold text-sm">{c.code}. {c.name}</span>
+                    <span className="text-[10px] text-muted-foreground">وزن {c.weight}</span>
+                  </div>
+                  <span className="text-xs text-muted-foreground">{getDept(c.ownerDeptId)?.name}</span>
                 </div>
-                <span className="text-xs text-muted-foreground">{getDept(c.ownerDeptId)?.name}</span>
+                <div className="grid md:grid-cols-[1fr_auto_auto] gap-3 items-center">
+                  <input
+                    type="range" min={0} max={100} value={val}
+                    onChange={(e) => setScores(s => ({ ...s, [c.id]: Number(e.target.value) }))}
+                    className="w-full accent-primary"
+                  />
+                  <div className="text-center min-w-[80px]">
+                    <div className={`text-2xl font-bold ${val >= 75 ? "text-success" : val >= 50 ? "text-warning" : "text-destructive"}`}>{val}</div>
+                    <div className="text-[10px] text-muted-foreground">من {c.targetScore}</div>
+                  </div>
+                  <div className="text-[11px] text-muted-foreground min-w-[90px] text-center">
+                    فجوة <b className="text-foreground">{Math.max(0, c.targetScore - val)}</b><br/>
+                    {c.gaps} فجوة موثقة
+                  </div>
+                </div>
+                {c.notes && <p className="text-[11px] text-muted-foreground mt-2 italic">ملاحظة: {c.notes}</p>}
               </div>
-              <div className="grid md:grid-cols-3 gap-3 text-xs">
-                <div><label className="text-muted-foreground">الدرجة الحالية</label><Input type="number" defaultValue={c.currentScore} className="h-8 mt-1" /></div>
-                <div><label className="text-muted-foreground">الدرجة المستهدفة</label><Input type="number" defaultValue={c.targetScore} className="h-8 mt-1" /></div>
-                <div><label className="text-muted-foreground">مستوى الثقة</label>
-                  <select className="w-full h-8 mt-1 border border-input rounded-md px-2 text-xs bg-background"><option>عالية</option><option>متوسطة</option><option>منخفضة</option></select></div>
-              </div>
-              <ProgressBar value={c.currentScore} color={c.currentScore >= 75 ? "success" : "warning"} label="الفجوة عن المستهدف" showValue={false} />
-            </div>
-          ))}
+            );
+          })}
         </div>
       </SectionCard>
     </ExcellenceLayout>

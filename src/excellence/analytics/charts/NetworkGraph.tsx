@@ -56,13 +56,13 @@ export function NetworkGraph({ onSelect }: { onSelect: (n: { id: string; type: s
     const g = svg.append("g");
 
     const sim = d3.forceSimulation(nodes as any)
-      .force("link", d3.forceLink(links).id((d: any) => d.id).distance((d: any) => 90 / (d.weight || 1)).strength(0.4))
+      .force("link", d3.forceLink(links as any).id((d: any) => d.id).distance((d: any) => 90 / (d.weight || 1)).strength(0.4))
       .force("charge", d3.forceManyBody().strength(-180))
       .force("center", d3.forceCenter(W / 2, H / 2))
       .force("collide", d3.forceCollide().radius((d: any) => d.r + 4));
 
     const link = g.append("g").attr("stroke-opacity", 0.3).attr("stroke", "hsl(215 15% 50%)")
-      .selectAll("line").data(links).join("line")
+      .selectAll("line").data(links as any[]).join("line")
       .attr("stroke-width", (d: any) => Math.sqrt(d.weight) * 1.1);
 
     const node = g.append("g").selectAll("g").data(nodes).join("g")

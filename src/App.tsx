@@ -14,6 +14,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 import ExcellenceDashboard from "@/excellence/pages/Dashboard";
+import AnalyticsPage from "@/excellence/pages/Analytics";
 import {
   FrameworksPage, SelfAssessmentPage, EvidencesPage, GapsPage, ProjectsPage,
   MappingPage, IsoPage, DepartmentsPage, ReportsPage, AdvisorPage, BenchmarkPage,
@@ -48,6 +49,7 @@ const App = () => (
               <Route path="/reports" element={<ReportsPage />} />
               <Route path="/advisor" element={<AdvisorPage />} />
               <Route path="/benchmark" element={<BenchmarkPage />} />
+              <Route path="/analytics" element={<AnalyticsPage />} />
               <Route path="/settings" element={<ExcellenceSettingsPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>

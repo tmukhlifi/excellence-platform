@@ -28,6 +28,7 @@ const navItems = [
   { to: "/reports", icon: FileText, label: "التقارير التنفيذية" },
   { to: "/advisor", icon: Sparkles, label: "المستشار الذكي" },
   { to: "/benchmark", icon: BarChart3, label: "المقارنة المعيارية" },
+  { to: "/analytics", icon: Network, label: "التحليلات التفاعلية" },
   { to: "/settings", icon: Settings, label: "الإعدادات" },
 ];
 

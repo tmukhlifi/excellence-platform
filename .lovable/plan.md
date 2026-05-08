@@ -1,59 +1,64 @@
+## خطة تطوير منصة التميز المؤسسي
 
+سأقوم بتطوير المنصة الحالية (دون حذف أو إعادة بناء) وإضافة وحدات جديدة شاملة، مع توسيع البيانات التجريبية.
 
-## Security Hardening Plan
+### 1) توسيع طبقة البيانات (`src/data/mockData.ts`)
+- إضافة هياكل جديدة: `SubCriterion`, `GuidancePoint`, `AuditPlan`, `AuditEngagement`, `ChecklistItem`, `NonConformity`, `CorrectiveAction`, `User`, `Permission`, `Notification`, `ActivityLog`, `WorkflowState`.
+- بيانات تجريبية: 7 معايير رئيسية، 28+ معيار فرعي، 80 نقطة إرشادية، 4 نماذج، 12 إدارة، 15 مستخدماً، 60 شاهداً، 35 فجوة، 30 فرصة، 20 مشروعاً، 4 ISO، 80 بند تحقق، 12 عملية تدقيق، 8 خطط، 25 عدم مطابقة، 30 إجراء، 100 سجل نشاط، 20 تنبيهاً.
 
-The security scan found 8 findings (2 errors, 4 warnings, 2 info). The existing RLS foundation is solid — all tables have RLS enabled, roles are in a separate table, and `has_role()`/`get_user_org_id()` security definer functions exist. Here's what needs hardening:
+### 2) تطوير صفحة "نماذج التقييم" (`FrameworksPage`)
+- تبويب "إدارة المعايير والمعايير الفرعية" بجدول هرمي قابل للتوسيع (نموذج → معيار رئيسي → معيار فرعي → نقاط إرشادية) مع أعمدة الوزن، الإدارة المالكة، الشواهد، الاكتمال، حالة الجاهزية.
 
-### 1. Enable Leaked Password Protection
-Configure auth to reject passwords found in known breach databases.
+### 3) تطوير صفحة "التقييم الذاتي" (`SelfAssessmentPage`)
+- نموذج تقييم تفصيلي على مستوى المعيار الفرعي مع جميع الحقول المطلوبة.
+- منطق RADAR مبسط لـEFQM، منطق إتقان (ممكنات/نتائج) لـKAQA، تقييم امتثال لـISO.
+- لوحة جانبية: متوسط المعيار الرئيسي، عدد المكتمل/غير المقيّم، الشواهد الناقصة، فرص التحسين.
 
-### 2. Add Password Protection for Shared Proposals (Error)
-Shared proposals currently expose pricing and content to anyone with the link. Add optional password protection:
-- **Migration**: Add `share_password_hash` column to `proposals` table
-- **Edge function**: `verify-share-password` — accepts share_id + password, returns a signed short-lived token
-- **Update RLS**: Keep existing public SELECT for non-password-protected proposals; password-protected ones require verification through the edge function
-- **Frontend**: Update `PublicProposal.tsx` to show a password gate when `share_password_hash` is set; update `ProposalDetail.tsx` to let users set a share password
+### 4) وحدة جديدة: "برنامج التدقيق ISO"
+صفحات جديدة في `src/excellence/pages/iso/`:
+- `AuditPlans.tsx` — خطة سنوية + Timeline.
+- `AuditEngagements.tsx` — جدولة عمليات التدقيق.
+- `Checklists.tsx` — قوائم تحقق تفاعلية لـ9001/14001/45001/27001.
+- `AuditExecution.tsx` — شاشة تنفيذ التدقيق.
+- `AuditResults.tsx` — لوحة نتائج وKPIs ورسوم.
+- `NonConformities.tsx` — حالات عدم المطابقة + 5 لماذا + إجراءات تصحيحية.
+- `ImpactOnExcellence.tsx` — أثر ISO على EFQM/KAQA.
 
-### 3. Add Share Link Expiration (Error)
-- **Migration**: Add `share_expires_at` column to `proposals`
-- **Update RLS**: Modify "Anyone can view shared proposals" policy to check `share_expires_at IS NULL OR share_expires_at > now()`
-- **Frontend**: Add expiration date picker in proposal sharing UI
+### 5) وحدة جديدة: "المستخدمون والصلاحيات"
+صفحات جديدة في `src/excellence/pages/users/`:
+- `UsersList.tsx` — جدول المستخدمين + إجراءات.
+- `RolesPage.tsx` — الأدوار العشرة.
+- `PermissionsMatrix.tsx` — مصفوفة تفاعلية (الوحدات × الأدوار × أنواع الصلاحية).
+- `ActivityLog.tsx` — سجل نشاطات Audit Trail.
 
-### 4. Restrict Client Contact Info by Role (Warning)
-- Create a view `clients_public` that excludes `email` and `phone` for non-admin/manager users
-- Or add role-based filtering in the application layer since all org members currently see all client fields
+### 6) سير العمل والاعتمادات
+- مكوّن `WorkflowBadge` و`WorkflowStepper` يستخدم في صفحات التقييم/الشواهد/الفرص/المشاريع/التدقيق.
 
-### 5. Anonymize IP in Proposal Events (Warning)
-- Truncate IP addresses before storing (remove last octet) in `PublicProposal.tsx`
-- Add a privacy notice to the public proposal page
+### 7) مركز التنبيهات والمهام
+- صفحة `NotificationsPage.tsx` + Drawer من Bell في الـHeader.
 
-### 6. Align Proposal Version Access with Proposal Access (Info)
-- **Migration**: Update `proposal_versions` RLS to allow managers/admins to view versions of proposals they can access:
-```sql
-CREATE POLICY "Managers/admins can view org proposal versions"
-ON proposal_versions FOR SELECT
-USING (EXISTS (
-  SELECT 1 FROM proposals
-  WHERE proposals.id = proposal_versions.proposal_id
-  AND proposals.org_id = get_user_org_id(auth.uid())
-  AND (has_role(auth.uid(), 'admin') OR has_role(auth.uid(), 'manager'))
-));
-```
+### 8) تطوير صفحة التقارير
+- 13 تقريراً مع فلاتر، ملخص تنفيذي، KPIs، جدول، توصيات، أزرار تصدير PDF/Excel تجريبية.
 
-### 7. Add Role Change Audit Logging (Info)
-- **Migration**: Create `audit_logs` table with RLS (admin SELECT only, insert via trigger)
-- **Migration**: Add trigger on `user_roles` for INSERT/UPDATE/DELETE that logs changes to `audit_logs`
+### 9) تطوير لوحة القيادة
+- إضافة 12 KPI جديد + شريط فلاتر علوي (نموذج/معيار/إدارة/فترة/حالة/أولوية/مالك).
 
-### 8. Input Validation & Frontend Security
-- Sanitize all user inputs before database writes (proposal content, client notes)
-- Add rate limiting awareness on auth pages (already handled by backend, but add UI feedback)
-- Ensure no sensitive data in localStorage beyond the session token
+### 10) التنقل الجانبي
+- تحديث `ExcellenceLayout.tsx` بمجموعات قابلة للطي:
+  - **الأساسية**: لوحة، نماذج، تقييم، شواهد، فجوات، فرص، مشاريع.
+  - **التدقيق ISO**: خطط، عمليات، قوائم تحقق، تنفيذ، نتائج، عدم مطابقة، الأثر.
+  - **التحليلات**: التحليلات التفاعلية، التقارير، المقارنة، المستشار.
+  - **الإدارة**: المستخدمون، الأدوار، المصفوفة، السجل، الإعدادات.
+- جرس تنبيهات مع Drawer.
 
-### Files to Change
-- **Migrations**: 3-4 migrations for schema changes (share_password_hash, share_expires_at, audit_logs table + trigger, updated RLS policies)
-- **New edge function**: `verify-share-password`
-- **`src/pages/PublicProposal.tsx`**: Password gate, IP anonymization, privacy notice
-- **`src/pages/ProposalDetail.tsx`**: Share password + expiration UI
-- **`src/pages/ProposalBuilder.tsx`**: Share expiration option
-- **Auth config**: Enable leaked password protection
+### 11) المسارات (`App.tsx`)
+- إضافة ~15 مساراً جديداً تحت `/iso/*`, `/users/*`, `/notifications`.
 
+### تفاصيل تقنية
+- جميع البيانات mock داخل `mockData.ts` (متّسقة مع توجيه "Mock الآن + ترحيل لاحقاً").
+- استخدام مكوّنات shadcn الموجودة (Tabs, Table, Sheet, Dialog, Collapsible, Select, Slider, Progress).
+- استخدام Recharts للرسوم في النتائج/التقارير.
+- الحفاظ الكامل على الصفحات والمكوّنات الحالية والتسميات والألوان.
+- جميع النصوص بالعربية، RTL، دون "قريباً".
+
+سأنفّذ كل ما سبق دفعةً واحدة بإنشاء الملفات والتعديلات اللازمة.

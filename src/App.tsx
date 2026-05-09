@@ -16,10 +16,11 @@ import NotFound from "./pages/NotFound";
 import ExcellenceDashboard from "@/excellence/pages/Dashboard";
 import AnalyticsPage from "@/excellence/pages/Analytics";
 import {
-  FrameworksPage, SelfAssessmentPage, EvidencesPage, GapsPage, ProjectsPage,
+  FrameworksPage, EvidencesPage, GapsPage, ProjectsPage,
   MappingPage, IsoPage, DepartmentsPage, ReportsPage, AdvisorPage, BenchmarkPage,
   ExcellenceSettingsPage,
 } from "@/excellence/pages/Placeholder";
+import SelfAssessmentPage from "@/excellence/pages/SelfAssessment";
 
 const queryClient = new QueryClient();
 

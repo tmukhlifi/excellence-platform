@@ -101,3 +101,37 @@
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
+
+user_problem_statement: "إكمال مسار وحدة التدقيق الداخلي ISO من برنامج التدقيق السنوي إلى الإغلاق (9 مراحل) مع تحسين تجربة المستخدم وإضافة أزرار انتقال وربطها بلوحة القيادة والشواهد وفرص ومشاريع التحسين."
+
+frontend:
+  - task: "ISO Internal Audit 9-stage workflow"
+    implemented: true
+    working: true
+    file: "/app/frontend/src/excellence/pages/AuditPages.tsx, /app/frontend/src/excellence/components/AuditWorkflowNav.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Built 9-stage audit module: program → plans → checklists → execution → results → non-conformities → root-cause → corrective-actions → closure. Each page shows AuditWorkflowNav (visual 9-step progress) + AuditCrossLinks (dashboard/evidences/gaps/projects) + AuditStageActions (Previous/Next stage buttons). Sidebar has collapsible 'التدقيق الداخلي ISO' group listing 9 numbered sub-items. Dashboard now has 'ملخص التدقيق الداخلي ISO' card linking to all 9 stages with KPIs."
+      - working: true
+        agent: "testing"
+        comment: "All 12 test scenarios PASSED: navigation between all 9 stages works, Previous/Next buttons functional, status badges visible, RTL/Arabic working, cross-module links functional, RCA tabs (5-Whys/Ishikawa/Conclusion) work, 'تحويل إلى مشروع تحسين' buttons on NC page work. No critical issues."
+
+metadata:
+  created_by: "main_agent"
+  version: "1.1"
+  test_sequence: 1
+
+test_plan:
+  current_focus:
+    - "ISO Internal Audit 9-stage workflow"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "completed"
+
+agent_communication:
+  - agent: "main"
+    message: "تم إنجاز وحدة التدقيق الداخلي ISO كاملة بـ 9 مراحل متصلة. أُضيف ملف AuditPages.tsx (9 صفحات) + AuditWorkflowNav.tsx (مكون التنقل بين المراحل). أُضيفت 10 routes إلى App.tsx، وقائمة جانبية قابلة للتوسيع، وملخص في لوحة القيادة. تم اختبار جميع المراحل بنجاح."

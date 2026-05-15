@@ -21,6 +21,11 @@ import {
   ExcellenceSettingsPage,
 } from "@/excellence/pages/Placeholder";
 import SelfAssessmentPage from "@/excellence/pages/SelfAssessment";
+import {
+  AuditProgramPage, AuditPlanPage, ChecklistsPageV2, AuditExecutionPageV2,
+  AuditResultsPageV2, NonConformitiesPageV2, RootCauseAnalysisPage,
+  CorrectiveActionsPage, AuditClosurePage,
+} from "@/excellence/pages/AuditPages";
 
 const queryClient = new QueryClient();
 
@@ -46,6 +51,15 @@ const App = () => (
               <Route path="/projects" element={<ProjectsPage />} />
               <Route path="/mapping" element={<MappingPage />} />
               <Route path="/iso" element={<IsoPage />} />
+              <Route path="/iso/program" element={<AuditProgramPage />} />
+              <Route path="/iso/plans" element={<AuditPlanPage />} />
+              <Route path="/iso/checklists" element={<ChecklistsPageV2 />} />
+              <Route path="/iso/execution" element={<AuditExecutionPageV2 />} />
+              <Route path="/iso/results" element={<AuditResultsPageV2 />} />
+              <Route path="/iso/non-conformities" element={<NonConformitiesPageV2 />} />
+              <Route path="/iso/root-cause" element={<RootCauseAnalysisPage />} />
+              <Route path="/iso/corrective-actions" element={<CorrectiveActionsPage />} />
+              <Route path="/iso/closure" element={<AuditClosurePage />} />
               <Route path="/departments" element={<DepartmentsPage />} />
               <Route path="/reports" element={<ReportsPage />} />
               <Route path="/advisor" element={<AdvisorPage />} />

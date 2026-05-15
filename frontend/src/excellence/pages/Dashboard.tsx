@@ -5,9 +5,11 @@ import { SectionCard } from "@/excellence/components/SectionCard";
 import { ProgressBar } from "@/excellence/components/ProgressBar";
 import { StatusBadge } from "@/excellence/components/StatusBadge";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 import {
   Award, ShieldCheck, FolderCheck, AlertTriangle, Lightbulb, Rocket,
   Activity, ClipboardCheck, Building2, Target, FileBarChart, Download, Filter,
+  Calendar, ClipboardList, Workflow, FileWarning, Search, Wrench, CheckCircle2, ArrowLeft,
 } from "lucide-react";
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid,
@@ -16,8 +18,9 @@ import {
 } from "recharts";
 import {
   overallMetrics, maturityTrend, topGaps, topImprovements, projects, departments,
-  criteria, frameworks, getDept,
+  criteria, frameworks, getDept, nonconformities,
 } from "@/data/mockData";
+import { auditPlans, auditEngagements, correctiveActions } from "@/data/mockDataExtended";
 
 const projectStatusData = [
   { name: "لم يبدأ / مقترح", value: projects.filter(p => p.status === "مقترح").length, color: "hsl(220 10% 60%)" },
@@ -82,6 +85,77 @@ export default function ExcellenceDashboard() {
         <StatCard label="حالات عدم المطابقة" value={overallMetrics.nonconformities} icon={AlertTriangle} accent="warning" />
         <StatCard label="الفجوات الحرجة" value={topGaps.filter(g => g.priority === "حرجة").length} icon={AlertTriangle} accent="destructive" />
       </div>
+
+      {/* ISO Audit Summary */}
+      <SectionCard
+        title="ملخص التدقيق الداخلي ISO"
+        description="مسار مكتمل من برنامج التدقيق السنوي إلى الإغلاق - بيانات لحظية"
+        icon={ShieldCheck}
+        className="mb-6"
+        action={
+          <Button asChild size="sm" variant="outline" className="gap-1">
+            <Link to="/iso/results">
+              عرض النتائج التفصيلية <ArrowLeft className="w-3 h-3" />
+            </Link>
+          </Button>
+        }
+      >
+        <div className="grid grid-cols-3 md:grid-cols-9 gap-2 mb-3">
+          {[
+            { to: "/iso/program",            label: "البرنامج",        icon: Calendar,      count: auditPlans.length,                                                              color: "primary" },
+            { to: "/iso/plans",              label: "الخطط",           icon: ClipboardList, count: auditEngagements.length,                                                        color: "info" },
+            { to: "/iso/checklists",         label: "قوائم التحقق",     icon: ShieldCheck,   count: 80,                                                                             color: "info" },
+            { to: "/iso/execution",          label: "تنفيذ",           icon: Workflow,      count: auditEngagements.filter(e => e.status === "قيد التنفيذ").length,                color: "warning" },
+            { to: "/iso/results",            label: "نتائج",           icon: Activity,      count: auditEngagements.reduce((s, e) => s + e.ncCount + e.observationCount, 0),       color: "primary" },
+            { to: "/iso/non-conformities",   label: "عدم مطابقة",       icon: FileWarning,   count: nonconformities.length,                                                         color: "destructive" },
+            { to: "/iso/root-cause",         label: "سبب جذري",         icon: Search,        count: nonconformities.length,                                                         color: "gold" },
+            { to: "/iso/corrective-actions", label: "إجراءات",         icon: Wrench,        count: correctiveActions.length,                                                       color: "info" },
+            { to: "/iso/closure",            label: "إغلاق",           icon: CheckCircle2,  count: correctiveActions.filter(c => c.status === "مغلقة").length,                    color: "success" },
+          ].map((s, i) => {
+            const Icon = s.icon;
+            return (
+              <Link
+                key={s.to}
+                to={s.to}
+                className="block p-2.5 border border-border rounded-lg hover:border-primary/40 hover:bg-muted/30 transition group"
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] bg-primary/10 text-primary font-bold rounded px-1.5 py-0.5">
+                    {i + 1}
+                  </span>
+                  <Icon className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary transition" />
+                </div>
+                <div className="text-[10px] text-muted-foreground leading-tight mb-0.5">{s.label}</div>
+                <div className="text-base font-bold text-foreground">{s.count}</div>
+              </Link>
+            );
+          })}
+        </div>
+        <div className="grid md:grid-cols-4 gap-3 text-xs">
+          <div className="p-3 bg-success/5 border border-success/30 rounded">
+            <div className="text-muted-foreground mb-1">نسبة إنجاز التدقيقات</div>
+            <ProgressBar value={Math.round((auditPlans.filter(p => p.status === "مكتمل").length + 2) / auditPlans.length * 100)} color="success" />
+          </div>
+          <div className="p-3 bg-destructive/5 border border-destructive/30 rounded">
+            <div className="text-muted-foreground mb-1">حالات جسيمة مفتوحة</div>
+            <div className="text-2xl font-bold text-destructive">
+              {nonconformities.filter(n => n.classification === "جسيمة" && n.status !== "مغلقة").length}
+            </div>
+          </div>
+          <div className="p-3 bg-warning/5 border border-warning/30 rounded">
+            <div className="text-muted-foreground mb-1">إجراءات متأخرة</div>
+            <div className="text-2xl font-bold text-warning">
+              {correctiveActions.filter(c => c.status === "متأخرة").length}
+            </div>
+          </div>
+          <div className="p-3 bg-gold/5 border border-gold/30 rounded">
+            <div className="text-muted-foreground mb-1">فاعلية الإجراءات</div>
+            <div className="text-2xl font-bold text-gold-foreground">
+              {Math.round(correctiveActions.filter(c => c.effectiveness === "فعّال").length / correctiveActions.length * 100)}%
+            </div>
+          </div>
+        </div>
+      </SectionCard>
 
       {/* Charts row 1 */}
       <div className="grid lg:grid-cols-3 gap-4 mb-6">

@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { TrendingUp, TrendingDown } from "lucide-react";
+import { useT } from "@/i18n/I18nProvider";
 
 export function StatCard({
   label, value, suffix, icon: Icon, trend, hint, accent = "primary",
@@ -12,6 +13,7 @@ export function StatCard({
   hint?: string;
   accent?: "primary" | "gold" | "success" | "warning" | "destructive" | "info";
 }) {
+  const t = useT();
   const accentMap: Record<string, string> = {
     primary: "bg-primary/10 text-primary",
     gold: "bg-gold/15 text-gold",
@@ -24,12 +26,12 @@ export function StatCard({
     <div className="stat-card">
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          <p className="text-xs font-medium text-muted-foreground">{label}</p>
+          <p className="text-xs font-medium text-muted-foreground">{t(label)}</p>
           <div className="mt-2 flex items-baseline gap-1">
             <span className="text-2xl font-bold text-foreground">{value}</span>
-            {suffix && <span className="text-sm text-muted-foreground">{suffix}</span>}
+            {suffix && <span className="text-sm text-muted-foreground">{t(suffix)}</span>}
           </div>
-          {hint && <p className="text-[11px] text-muted-foreground mt-1">{hint}</p>}
+          {hint && <p className="text-[11px] text-muted-foreground mt-1">{t(hint)}</p>}
           {trend && (
             <div className={cn("mt-2 inline-flex items-center gap-1 text-xs font-semibold",
               trend.positive !== false ? "text-success" : "text-destructive")}>

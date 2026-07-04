@@ -2,6 +2,8 @@ import { ReactNode, useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useRole } from "@/excellence/RoleContext";
+import { useI18n, useT } from "@/i18n/I18nProvider";
+import { LanguageSwitcher } from "@/i18n/LanguageSwitcher";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -55,6 +57,7 @@ const secondaryItems: NavItem[] = [
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const { pathname } = useLocation();
+  const t = useT();
   const inIsoAudit = pathname.startsWith("/iso/");
   const [isoOpen, setIsoOpen] = useState<boolean>(inIsoAudit);
   useEffect(() => { if (inIsoAudit) setIsoOpen(true); }, [inIsoAudit]);
@@ -69,12 +72,12 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         className={cn(
           "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-all",
           isActive
-            ? "bg-sidebar-accent text-gold font-semibold border-r-2 border-gold"
+            ? "bg-sidebar-accent text-gold font-semibold ltr:border-l-2 rtl:border-r-2 border-gold"
             : "text-sidebar-foreground/80 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
         )}
       >
         <item.icon className="w-4 h-4 shrink-0" />
-        <span>{item.label}</span>
+        <span>{t(item.label)}</span>
       </Link>
     );
   };
@@ -87,8 +90,8 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             <Award className="w-5 h-5 text-gold-foreground" />
           </div>
           <div>
-            <h1 className="text-base font-bold text-sidebar-foreground leading-tight">منصة التميز</h1>
-            <p className="text-xs text-sidebar-foreground/60">المؤسسي والجودة</p>
+            <h1 className="text-base font-bold text-sidebar-foreground leading-tight">{t("منصة التميز")}</h1>
+            <p className="text-xs text-sidebar-foreground/60">{t("المؤسسي والجودة")}</p>
           </div>
         </div>
       </div>
@@ -107,11 +110,11 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             )}
           >
             <ShieldCheck className="w-4 h-4 shrink-0" />
-            <span className="flex-1 text-right">التدقيق الداخلي ISO</span>
+            <span className="flex-1 text-start">{t("التدقيق الداخلي ISO")}</span>
             <ChevronDown className={cn("w-3.5 h-3.5 transition", isoOpen ? "" : "-rotate-90")} />
           </button>
           {isoOpen && (
-            <div className="mt-1 mr-3 pr-2 border-r border-sidebar-border/50 space-y-0.5">
+            <div className="mt-1 ltr:ml-3 rtl:mr-3 ltr:pl-2 rtl:pr-2 ltr:border-l rtl:border-r border-sidebar-border/50 space-y-0.5">
               {isoAuditItems.map((item, i) => {
                 const isActive = pathname === item.to;
                 return (
@@ -130,7 +133,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                       "w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0",
                       isActive ? "bg-gold text-gold-foreground" : "bg-sidebar-foreground/15"
                     )}>{i + 1}</span>
-                    <span className="truncate">{item.label}</span>
+                    <span className="truncate">{t(item.label)}</span>
                   </Link>
                 );
               })}
@@ -143,7 +146,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         </div>
       </nav>
       <div className="px-4 py-3 border-t border-sidebar-border text-[11px] text-sidebar-foreground/50">
-        النسخة 1.1 - بيانات تجريبية
+        {t("النسخة 1.1 - بيانات تجريبية")}
       </div>
     </div>
   );
@@ -151,21 +154,23 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
 export function ExcellenceLayout({ children }: { children: ReactNode }) {
   const { role, setRole, roles } = useRole();
+  const { dir } = useI18n();
+  const t = useT();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-background flex" dir="rtl">
+    <div className="min-h-screen bg-background flex" dir={dir}>
       {/* Desktop sidebar */}
-      <aside className="hidden lg:block w-64 shrink-0 border-l border-sidebar-border">
-        <div className="fixed top-0 right-0 w-64 h-screen">
+      <aside className={cn("hidden lg:block w-64 shrink-0", dir === "rtl" ? "border-l" : "border-r", "border-sidebar-border")}>
+        <div className={cn("fixed top-0 w-64 h-screen", dir === "rtl" ? "right-0" : "left-0")}>
           <SidebarContent />
         </div>
       </aside>
 
       {/* Mobile sheet */}
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-        <SheetContent side="right" className="p-0 w-72">
+        <SheetContent side={dir === "rtl" ? "right" : "left"} className="p-0 w-72">
           <SidebarContent onNavigate={() => setMobileOpen(false)} />
         </SheetContent>
       </Sheet>
@@ -184,34 +189,35 @@ export function ExcellenceLayout({ children }: { children: ReactNode }) {
             </Button>
             <div className="hidden md:flex items-center gap-2 text-xs text-muted-foreground">
               <Building2 className="w-4 h-4 text-primary" />
-              <span className="font-medium text-foreground">الجهة الحكومية</span>
+              <span className="font-medium text-foreground">{t("الجهة الحكومية")}</span>
               <span className="text-muted-foreground/50">/</span>
-              <span>إدارة التميز المؤسسي</span>
+              <span>{t("إدارة التميز المؤسسي")}</span>
             </div>
             <div className="flex-1" />
             <div className="hidden md:flex items-center gap-2 bg-muted/60 rounded-md px-3 h-9 w-72 border border-border">
               <Search className="w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="ابحث في المعايير، الشواهد، المشاريع..."
+                placeholder={t("ابحث في المعايير، الشواهد، المشاريع...")}
                 className="border-0 bg-transparent h-8 px-0 focus-visible:ring-0 text-sm"
               />
             </div>
+            <LanguageSwitcher />
             <Button variant="ghost" size="icon" className="relative">
               <Bell className="w-5 h-5" />
-              <Badge className="absolute -top-1 -left-1 h-4 min-w-4 px-1 text-[10px] bg-gold text-gold-foreground">5</Badge>
+              <Badge className={cn("absolute -top-1 h-4 min-w-4 px-1 text-[10px] bg-gold text-gold-foreground", dir === "rtl" ? "-left-1" : "-right-1")}>5</Badge>
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="gap-2 px-2">
                   <UserCircle2 className="w-7 h-7 text-primary" />
                   <div className="hidden md:flex flex-col items-end leading-tight">
-                    <span className="text-sm font-semibold text-foreground">د. عبدالرحمن السهلي</span>
-                    <span className="text-[11px] text-muted-foreground">{role}</span>
+                    <span className="text-sm font-semibold text-foreground">{t("د. عبدالرحمن السهلي")}</span>
+                    <span className="text-[11px] text-muted-foreground">{t(role)}</span>
                   </div>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-64">
-                <DropdownMenuLabel>تبديل الدور (تجريبي)</DropdownMenuLabel>
+                <DropdownMenuLabel>{t("تبديل الدور (تجريبي)")}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {roles.map((r) => (
                   <DropdownMenuItem
@@ -219,15 +225,15 @@ export function ExcellenceLayout({ children }: { children: ReactNode }) {
                     onClick={() => setRole(r)}
                     className={cn("text-sm", role === r && "bg-accent text-accent-foreground font-semibold")}
                   >
-                    {r}
+                    {t(r)}
                   </DropdownMenuItem>
                 ))}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => navigate("/settings")}>
-                  <Settings className="w-4 h-4 ml-2" /> الإعدادات
+                  <Settings className={cn("w-4 h-4", dir === "rtl" ? "ml-2" : "mr-2")} /> {t("الإعدادات")}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate("/")}>
-                  <LogOut className="w-4 h-4 ml-2" /> تسجيل الخروج
+                  <LogOut className={cn("w-4 h-4", dir === "rtl" ? "ml-2" : "mr-2")} /> {t("تسجيل الخروج")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

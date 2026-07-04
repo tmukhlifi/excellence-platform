@@ -1,6 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useT } from "@/i18n/I18nProvider";
 import {
   Calendar, ClipboardList, ShieldCheck, Workflow, Activity,
   FileWarning, Search, Wrench, CheckCircle2, ChevronLeft, ChevronRight, Check,
@@ -21,20 +22,21 @@ export const AUDIT_STAGES = [
 export type AuditStageKey = typeof AUDIT_STAGES[number]["key"];
 
 export function AuditWorkflowNav({ current }: { current: AuditStageKey }) {
+  const t = useT();
   const idx = AUDIT_STAGES.findIndex(s => s.key === current);
   return (
     <div className="bg-card border border-border rounded-lg p-3 mb-4 shadow-sm">
       <div className="flex items-center justify-between mb-2.5">
         <div className="flex items-center gap-2">
           <span className="text-[11px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">
-            مسار التدقيق الداخلي ISO
+            {t("مسار التدقيق الداخلي ISO")}
           </span>
           <span className="text-[11px] text-muted-foreground">
-            المرحلة {idx + 1} من {AUDIT_STAGES.length}
+            {t("المرحلة")} {idx + 1} {t("من")} {AUDIT_STAGES.length}
           </span>
         </div>
         <div className="text-[11px] text-muted-foreground hidden md:block">
-          من برنامج التدقيق السنوي إلى الإغلاق
+          {t("من برنامج التدقيق السنوي إلى الإغلاق")}
         </div>
       </div>
       <div className="flex items-stretch gap-1 overflow-x-auto pb-1">
@@ -62,7 +64,7 @@ export function AuditWorkflowNav({ current }: { current: AuditStageKey }) {
                 {done ? <Check className="w-2.5 h-2.5" /> : s.id}
               </span>
               <Icon className="w-3 h-3" />
-              <span>{s.label}</span>
+              <span>{t(s.label)}</span>
             </Link>
           );
         })}
@@ -72,6 +74,7 @@ export function AuditWorkflowNav({ current }: { current: AuditStageKey }) {
 }
 
 export function AuditStageActions({ current }: { current: AuditStageKey }) {
+  const t = useT();
   const idx = AUDIT_STAGES.findIndex(s => s.key === current);
   const prev = idx > 0 ? AUDIT_STAGES[idx - 1] : null;
   const next = idx < AUDIT_STAGES.length - 1 ? AUDIT_STAGES[idx + 1] : null;
@@ -82,30 +85,30 @@ export function AuditStageActions({ current }: { current: AuditStageKey }) {
           <Button asChild variant="outline" className="gap-1 w-full sm:w-auto">
             <Link to={prev.to}>
               <ChevronRight className="w-4 h-4" />
-              <span className="text-xs">المرحلة السابقة:</span>
-              <span className="font-semibold text-xs">{prev.label}</span>
+              <span className="text-xs">{t("المرحلة السابقة:")}</span>
+              <span className="font-semibold text-xs">{t(prev.label)}</span>
             </Link>
           </Button>
         ) : (
-          <div className="text-[11px] text-muted-foreground px-2">— بداية المسار —</div>
+          <div className="text-[11px] text-muted-foreground px-2">{t("— بداية المسار —")}</div>
         )}
       </div>
       <div className="text-[11px] text-muted-foreground text-center hidden sm:block">
-        المرحلة الحالية: <b className="text-foreground">{AUDIT_STAGES[idx].label}</b>
+        {t("المرحلة الحالية:")} <b className="text-foreground">{t(AUDIT_STAGES[idx].label)}</b>
       </div>
       <div>
         {next ? (
           <Button asChild className="gap-1 w-full sm:w-auto">
             <Link to={next.to}>
-              <span className="text-xs">المرحلة التالية:</span>
-              <span className="font-semibold text-xs">{next.label}</span>
+              <span className="text-xs">{t("المرحلة التالية:")}</span>
+              <span className="font-semibold text-xs">{t(next.label)}</span>
               <ChevronLeft className="w-4 h-4" />
             </Link>
           </Button>
         ) : (
           <Button variant="outline" disabled className="gap-1 w-full sm:w-auto">
             <CheckCircle2 className="w-4 h-4 text-success" />
-            <span className="text-xs">اكتمل مسار التدقيق</span>
+            <span className="text-xs">{t("اكتمل مسار التدقيق")}</span>
           </Button>
         )}
       </div>
@@ -115,6 +118,7 @@ export function AuditStageActions({ current }: { current: AuditStageKey }) {
 
 /** Cross-module quick links shown at the top of every audit page */
 export function AuditCrossLinks() {
+  const t = useT();
   const links = [
     { to: "/dashboard",    label: "لوحة القيادة",          color: "bg-primary/10 text-primary border-primary/30" },
     { to: "/evidences",    label: "الشواهد",                color: "bg-info/10 text-info border-info/30" },
@@ -123,14 +127,14 @@ export function AuditCrossLinks() {
   ];
   return (
     <div className="flex flex-wrap gap-1.5 mb-3">
-      <span className="text-[11px] text-muted-foreground self-center ml-1">روابط متصلة:</span>
+      <span className="text-[11px] text-muted-foreground self-center ml-1">{t("روابط متصلة:")}</span>
       {links.map(l => (
         <Link
           key={l.to}
           to={l.to}
           className={cn("text-[11px] px-2 py-0.5 rounded-full border hover:opacity-80 transition", l.color)}
         >
-          {l.label}
+          {t(l.label)}
         </Link>
       ))}
     </div>

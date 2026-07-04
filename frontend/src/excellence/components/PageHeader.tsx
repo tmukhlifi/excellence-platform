@@ -1,8 +1,10 @@
 import { ReactNode } from "react";
+import { useT } from "@/i18n/I18nProvider";
 
 export function PageHeader({
   title, subtitle, actions, icon: Icon,
 }: { title: string; subtitle?: string; actions?: ReactNode; icon?: any }) {
+  const t = useT();
   return (
     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6 pb-4 border-b border-border">
       <div className="flex items-start gap-3">
@@ -12,8 +14,8 @@ export function PageHeader({
           </div>
         )}
         <div>
-          <h1 className="text-2xl font-bold text-foreground tracking-tight">{title}</h1>
-          {subtitle && <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>}
+          <h1 className="text-2xl font-bold text-foreground tracking-tight">{t(title)}</h1>
+          {subtitle && <p className="text-sm text-muted-foreground mt-1">{t(subtitle)}</p>}
         </div>
       </div>
       {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
